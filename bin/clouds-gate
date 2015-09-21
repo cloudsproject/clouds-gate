@@ -15,7 +15,6 @@ function printLine () {
   console.log(common.takeChar('=', process.stdout.columns - 2));
 }
 
-
 program
   .version(version)
   .option('-l, --local <p>', 'local UNIX domain path, default to "' + common.default.listenPath + '"')
@@ -25,6 +24,8 @@ program
 var listenPath = program.local || common.default.listenPath;
 listenPath = path.resolve(listenPath);
 var statusInterval = program.statusInterval || common.default.statusInterval;
+
+//------------------------------------------------------------------------------
 
 var gate = createGate({
   path: listenPath
@@ -67,6 +68,10 @@ gate.on('connection', function (s) {
     log.info('client disonnected: #%s', s.id, getServerInfo());
   });
 });
+
+require('../src/init_gate')(gate);
+
+//------------------------------------------------------------------------------
 
 function printSystemStatus () {
   var services = 0;

@@ -49,4 +49,7 @@ c.demo = function () {
     client.call('pid', [], callback);
   };
 };
-
+c.info = function (name, callback) {
+  callback = callback || console.log;
+  client.call('$Gate.' + name, [], callback);
+};
