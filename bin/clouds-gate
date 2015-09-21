@@ -21,7 +21,7 @@ program
   .option('-l, --local <p>', 'local UNIX domain path, default to "' + common.default.listenPath + '"')
   .option('-i, --status-interval <t>', 'print system status inertval(ms)' + common.default.statusInterval)
   .parse(process.argv);
-console.log(program);
+
 var listenPath = program.local || common.default.listenPath;
 listenPath = path.resolve(listenPath);
 var statusInterval = program.statusInterval || common.default.statusInterval;
@@ -68,7 +68,7 @@ gate.on('connection', function (s) {
   });
 });
 
-setInterval(function () {
+function printSystemStatus () {
   var services = 0;
   var counters = 0;
   for (var i in gate._servicesTable._services) {
@@ -85,10 +85,12 @@ setInterval(function () {
   var mem = process.memoryUsage();
   log.info('online clients: %s, registered services: %s, total calls: %s, memory usage: rss=%s, heapTotal=%s, heapUsed=%s',
     gate._clientCounter, services, counters, MB(mem.rss), MB(mem.heapTotal), MB(mem.heapUsed));
-}, statusInterval);
+}
+setInterval(printSystemStatus, statusInterval);
 
 process.on('exit', function (code) {
   printLine();
+  printSystemStatus();
   log.info('process exit, code=%s', code);
   if (isListening) {
     log.info('delete sock file %s', listenPath);
