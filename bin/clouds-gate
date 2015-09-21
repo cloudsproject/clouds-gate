@@ -1,0 +1,83 @@
+#!/usr/bin/env node
+
+var fs = require('fs');
+var path = require('path');
+var program = require('commander');
+var utils = require('lei-utils');
+var Log = require('log');
+var log = new Log('info');
+var createGate = require('clouds-base').createGate
+var common = require('../src/common');
+var version = require('../package').version;
+
+
+function printLine () {
+  console.log(common.takeChar('=', process.stdout.columns - 2));
+}
+
+
+program
+  .version(version)
+  .option('-l, --local <p>', 'local UNIX domain path, default to "' + common.default.listenPath + '"')
+  .parse(process.argv);
+
+var listenPath = program.local || common.default.listenPath;
+listenPath = path.resolve(listenPath);
+
+var gate = createGate({
+  path: listenPath
+});
+
+utils.bugfree();
+printLine();
+log.info('clouds-gate (version=%s, path=%s)', version, listenPath);
+
+function getServerInfo () {
+  return '(online clients: ' + gate._clientCounter + ')';
+}
+
+var isListening = false;
+gate.on('listening', function () {
+  isListening = true;
+  log.info('listening');
+});
+
+gate.on('error', function (err) {
+  printLine();
+  log.error('listen error: %s', err);
+  if (err.code === 'EADDRINUSE') {
+    console.log('');
+    console.error('maybe there is another clouds-gate is running, if else, please run the following command to delete the sock file:');
+    console.error('  rm ' + listenPath);
+    console.log('and then relaunch clouds-gate again');
+    console.log('');
+  }
+});
+
+gate.on('exit', function () {
+  log.info('exit');
+  process.exit();
+});
+
+gate.on('connection', function (s) {
+  console.log(s);
+  log.info('new connection from [%s] %s:%s %s', s.remoteFamily, s.remoteAddress, s.remotePort, getServerInfo());
+});
+
+process.on('exit', function (code) {
+  printLine();
+  log.info('process exit, code=%s', code);
+  if (isListening) {
+    log.info('delete sock file %s', listenPath);
+    fs.unlinkSync(listenPath);
+  }
+});
+process.on('SIGINT', function (c) {
+  process.exit();
+});
+process.on('uncaughtException', function (err) {
+  log.error('Caught exception: %s', (err && err.stack) || err);
+  if (err.code === 'EADDRINUSE') {
+    process.exit(1);
+  }
+});
