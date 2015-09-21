@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+
+var fs = require('fs');
+var path = require('path');
+var repl = require('repl');
+var program = require('commander');
+var utils = require('lei-utils');
+var common = require('../src/common');
+var version = require('../package').version;
+
+
+function printLine () {
+  console.log(common.takeChar('=', process.stdout.columns - 2));
+}
+
+
+program
+  .version(version)
+  .option('-l, --local <p>', 'local UNIX domain path, default to "' + common.default.listenPath + '"')
+  .parse(process.argv);
+
+var listenPath = program.local || common.default.listenPath;
+listenPath = path.resolve(listenPath);
+
+utils.bugfree();
+printLine();
+console.log('clouds-gate (version=%s, path=%s)', version, listenPath);
+
+
+var socket = require('clouds-socket');
+var createGate = require('clouds-base').createGate;
+var createClient = require('clouds-base').createClient;
+var client = createClient({
+  path: listenPath
+});
+printLine();
+var r = repl.start('> ');
+var c = r.context;
+c.socket = socket;
+c.createGate = createGate;
+c.createClient = createClient;
+c.client = client;
+c.demo = function () {
+  client.register('pid', function (callback) {
+    callback(null, process.pid);
+  });
+  c.pid = function (callback) {
+    callback = callback || console.log;
+    client.call('pid', [], callback);
+  };
+};
+

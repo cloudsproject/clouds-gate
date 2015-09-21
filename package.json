@@ -7,7 +7,8 @@
     "test": "./run_test && /run_test2"
   },
   "bin": {
-    "clouds-gate": "./bin/clouds-gate"
+    "clouds-gate": "./bin/clouds-gate",
+    "clouds-gate-repl": "./bin/clouds-gate-repl"
   },
   "repository": {
     "type": "git",
